@@ -1,9 +1,9 @@
-name: Auto Commit - Keep Graph Green
+name: Auto Commit - Max Stealth Dynamic Pattern
 
 on:
   schedule:
-    # Runs every day at 12:00 PM UTC (Adjust as needed)
-    - cron: '0 12 * * *'
+    # Wakes up every day at 7:00 AM UTC (Adjust to your preferred start window)
+    - cron: '0 7 * * *'
   workflow_dispatch: # Allows you to trigger it manually for testing
 
 jobs:
@@ -13,14 +13,52 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Make a change to text file
+    - name: Delay and Generate Random Commits
       run: |
-        echo "Last automated run: $(date)" > daily_log.txt
+        # --- STEALTH DELAY GENERATOR ---
+        # Pick a random number of minutes between 0 and 480 (0 to 8 hours)
+        RANDOM_DELAY=$((RANDOM % 481))
+        echo "Stealth mode: Sleeping for $RANDOM_DELAY minutes before executing..."
+        sleep $((RANDOM_DELAY * 60))
+        
+        # --- DYNAMIC WEEKDAY COMMIT LOGIC ---
+        # Get current day of the week (1=Monday, 6=Saturday, 7=Sunday)
+        DAY=$(date +%u)
+        
+        if [ "$DAY" -eq 6 ] || [ "$DAY" -eq 7 ]; then
+          # Weekends: Peak activity (5 to 10 commits)
+          NUM_COMMITS=$((RANDOM % 6 + 5))
+        elif [ "$DAY" -eq 1 ]; then
+          # Monday: Minimal activity (0 to 1 commit)
+          NUM_COMMITS=$((RANDOM % 2))
+        else
+          # Tuesday-Friday: Moderate activity (2 to 5 commits)
+          NUM_COMMITS=$((RANDOM % 4 + 2))
+        fi
 
-    - name: Commit and Push changes
-      run: |
+        echo "Target achieved: Generating $NUM_COMMITS commits today."
+
+        # Configure Git credentials safely
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@://github.com"
+
+        # --- RANDOMIZE TIME BETWEEN MULTIPLE COMMITS ---
+        for i in $(seq 1 $NUM_COMMITS); do
+          echo "Automated session: $(date) - action $i" >> daily_log.txt
+          git add daily_log.txt
+          git commit -m "chore: update system architecture assets [skip ci]"
+          
+          # If there are more commits left, pause randomly (1 to 15 mins) between them
+          if [ "$i" -lt "$NUM_COMMITS" ]; then
+            INTER_DELAY=$((RANDOM % 15 + 1))
+            echo "Spacing out next commit: sleeping for $INTER_DELAY minutes..."
+            sleep $((INTER_DELAY * 60))
+          fi
+        done
+
+    - name: Push changes
+      run: |
+        git push
         git add daily_log.txt
         git commit -m "chore: automated daily activity update [skip ci]"
         git push
