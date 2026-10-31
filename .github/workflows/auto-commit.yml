@@ -2,9 +2,9 @@ name: Auto Commit - Max Stealth Dynamic Pattern
 
 on:
   schedule:
-    # Wakes up every day at 7:00 AM UTC (Adjust to your preferred start window)
-    - cron: '0 7 * * *'
-  workflow_dispatch: # Allows you to trigger it manually for testing
+    # Check every hour to see if it should make a commit
+    - cron: '0 * * * *'
+  workflow_dispatch: # For manual testing
 
 jobs:
   commit:
@@ -13,16 +13,21 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Delay and Generate Random Commits
+    - name: Roll Dice and Generate Random Commits
       run: |
-        # --- STEALTH DELAY GENERATOR ---
-        # Pick a random number of minutes between 0 and 480 (0 to 8 hours)
-        RANDOM_DELAY=$((RANDOM % 481))
-        echo "Stealth mode: Sleeping for $RANDOM_DELAY minutes before executing..."
-        sleep $((RANDOM_DELAY * 60))
-        
+        # --- STEALTH HOUR RANDOMIZER ---
+        # Bypasses the hourly check on a manual run so you can always test it
+        if [ "${{ github.event_name }}" = "schedule" ]; then
+          # Pick a random number between 1 and 4
+          DICE=$((RANDOM % 4 + 1))
+          # Only proceed 25% of the time (1 out of 4 hours). Adjust to change frequency.
+          if [ "$DICE" -ne 1 ]; then
+            echo "Stealth skip: Skipping this hour to stay unpredictable."
+            exit 0
+          fi
+        fi
+
         # --- DYNAMIC WEEKDAY COMMIT LOGIC ---
-        # Get current day of the week (1=Monday, 6=Saturday, 7=Sunday)
         DAY=$(date +%u)
         
         if [ "$DAY" -eq 6 ] || [ "$DAY" -eq 7 ]; then
@@ -36,29 +41,17 @@ jobs:
           NUM_COMMITS=$((RANDOM % 4 + 2))
         fi
 
-        echo "Target achieved: Generating $NUM_COMMITS commits today."
+        echo "Target achieved: Generating $NUM_COMMITS commits."
 
-        # Configure Git credentials safely
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@://github.com"
 
-        # --- RANDOMIZE TIME BETWEEN MULTIPLE COMMITS ---
         for i in $(seq 1 $NUM_COMMITS); do
           echo "Automated session: $(date) - action $i" >> daily_log.txt
           git add daily_log.txt
           git commit -m "chore: update system architecture assets [skip ci]"
-          
-          # If there are more commits left, pause randomly (1 to 15 mins) between them
-          if [ "$i" -lt "$NUM_COMMITS" ]; then
-            INTER_DELAY=$((RANDOM % 15 + 1))
-            echo "Spacing out next commit: sleeping for $INTER_DELAY minutes..."
-            sleep $((INTER_DELAY * 60))
-          fi
         done
 
     - name: Push changes
       run: |
-        git push
-        git add daily_log.txt
-        git commit -m "chore: automated daily activity update [skip ci]"
         git push
