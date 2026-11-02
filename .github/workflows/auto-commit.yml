@@ -43,6 +43,7 @@ jobs:
 
         echo "Target achieved: Generating $NUM_COMMITS commits."
 
+        # Configure Git with your explicit user profile credentials
         git config --global user.name "ChastooMatic"
         git config --global user.email "liveffgaminggaming@gmail.com"
 
@@ -53,6 +54,7 @@ jobs:
         done
 
     - name: Push changes
+      env:
+        PAT_TOKEN: ${{ secrets.API_Key }}
       run: |
-      git push origin master
-                
+        git push https://x-access-token:${PAT_TOKEN}@://github.com{{ github.repository }}.git HEAD:main
