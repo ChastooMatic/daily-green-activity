@@ -43,9 +43,8 @@ jobs:
 
         echo "Target achieved: Generating $NUM_COMMITS commits."
 
-        # Configure Git with your explicit user profile credentials
-        git config --global user.name "ChastooMatic"
-        git config --global user.email "liveffgaminggaming@gmail.com"
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@://github.com"
 
         for i in $(seq 1 $NUM_COMMITS); do
           echo "Automated session: $(date) - action $i" >> daily_log.txt
@@ -54,7 +53,6 @@ jobs:
         done
 
     - name: Push changes
-      env:
-        PAT_TOKEN: ${{ secrets.API_Key }}
       run: |
-        git push https://x-access-token:${PAT_TOKEN}@://github.com{{ github.repository }}.git HEAD:main
+        git push origin master
+              
